@@ -22,6 +22,7 @@ export const MeasurementChart = ({ samples, rollingSeconds }: MeasurementChartPr
   const [frozenSamples, setFrozenSamples] = useState<ChartSample[] | undefined>();
   const [traceVisible, setTraceVisible] = useState<Record<TraceName, boolean>>({ voltage: true, current: true, power: true });
   const displayedSamples = frozenSamples ?? samples;
+  const hasSamples = displayedSamples.length > 0;
   const times = displayedSamples.map((sample) => new Date(sample.timestamp));
 
   const exportImage = async (format: "png" | "svg") => {
@@ -82,14 +83,18 @@ export const MeasurementChart = ({ samples, rollingSeconds }: MeasurementChartPr
       ]}
       layout={{
         autosize: true, height: 390, uirevision: "live-chart-v1", paper_bgcolor: "#101d2f", plot_bgcolor: "#101d2f", font: { color: "#cbd5e1", family: "Inter, system-ui, sans-serif" },
-        // Reserve a right-hand gutter for the two independent scales. A free
-        // y3 axis otherwise draws its labels over the measurement area.
-        margin: { l: 52, r: 112, t: 16, b: 42 },
+        // Keep just enough room for the two independent right-hand scales;
+        // labels are placed above each scale rather than in the plot gutter.
+        margin: { l: 52, r: 30, t: 30, b: 42 },
         legend: { orientation: "h", y: 1.16, uirevision: "live-chart-legend-v1" },
-        xaxis: { domain: [0, 0.84], gridcolor: "#24334b", zerolinecolor: "#24334b", tickformat: "%H:%M:%S" },
+        xaxis: { domain: [0, 0.95], gridcolor: "#24334b", zerolinecolor: "#24334b", tickformat: "%H:%M:%S" },
         yaxis: { title: "V", gridcolor: "#24334b", zerolinecolor: "#24334b", fixedrange: false },
-        yaxis2: { title: "A", overlaying: "y", side: "right", showgrid: false, fixedrange: false },
-        yaxis3: { title: "W", overlaying: "y", anchor: "free", side: "right", position: 0.94, showgrid: false, fixedrange: false },
+        yaxis2: { overlaying: "y", side: "right", showgrid: false, fixedrange: false, visible: hasSamples },
+        yaxis3: { overlaying: "y", anchor: "free", side: "right", position: 0.985, showgrid: false, fixedrange: false, visible: hasSamples },
+        annotations: hasSamples ? [
+          { text: "A", xref: "paper", yref: "paper", x: 0.95, y: 1.04, showarrow: false, font: { color: "#cbd5e1", size: 13 }, xanchor: "center", yanchor: "bottom" },
+          { text: "W", xref: "paper", yref: "paper", x: 0.985, y: 1.04, showarrow: false, font: { color: "#cbd5e1", size: 13 }, xanchor: "center", yanchor: "bottom" }
+        ] : [],
         hovermode: "x unified"
       }}
       config={{ responsive: true, displaylogo: false, modeBarButtonsToRemove: ["select2d", "lasso2d"] }}

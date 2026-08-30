@@ -1,0 +1,18 @@
+.pio/
+.pio-core/
+.DS_Store
+__pycache__/
+.idea/
+web/node_modules/
+# Keep the production PWA in Git: deploy-static only performs git checkout
+# and does not run the frontend build on the server.
+web/dist/*
+!web/dist/.gitkeep
+!web/dist/assets/
+!web/dist/assets/**
+!web/dist/index.html
+!web/dist/icon.svg
+!web/dist/manifest.webmanifest
+!web/dist/registerSW.js
+!web/dist/sw.js
+!web/dist/workbox-*.js

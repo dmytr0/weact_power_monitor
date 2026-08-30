@@ -9,18 +9,7 @@ const buildDirectory = path.join(webDirectory, "dist");
 
 // Nginx serves the repository root (/srv/www/projects/$project). Keep only
 // generated static entries mirrored there; source and firmware are untouched.
-const generatedNames = new Set([
-  "assets",
-  "index.html",
-  "icon.svg",
-  "manifest.webmanifest",
-  "registerSW.js",
-  "sw.js"
-]);
-
-for (const entry of await readdir(buildDirectory)) {
-  if (entry === "assets" || entry.startsWith("workbox-")) generatedNames.add(entry);
-}
+const generatedNames = new Set(await readdir(buildDirectory));
 
 for (const entry of generatedNames) {
   await rm(path.join(projectDirectory, entry), { recursive: true, force: true });

@@ -16,6 +16,14 @@ const duration = (seconds: number | undefined): string => {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${Math.floor(seconds % 60).toString().padStart(2, "0")}`;
 };
 const filenameDate = (timestamp: number): string => new Date(timestamp).toISOString().replaceAll(/[:.]/gu, "-");
+const INTRODUCTION_STORAGE_KEY = "weact-power-monitor-introduction-seen-v1";
+const introductionWasSeen = (): boolean => {
+  try {
+    return localStorage.getItem(INTRODUCTION_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
 
 type PdoKind = "fixed" | "pps" | "avs";
 interface SelectedPdo {
@@ -46,6 +54,7 @@ export default function App(): ReactElement {
   const [activeTab, setActiveTab] = useState<"monitor" | "system" | "diagnostics" | "protocol">("monitor");
   const [rshunt, setRshunt] = useState("");
   const [offsets, setOffsets] = useState<CurrentOffsets>();
+  const [introductionOpen, setIntroductionOpen] = useState(() => !introductionWasSeen());
   const importInput = useRef<HTMLInputElement>(null);
   const connected = monitor.status === "connected";
 
@@ -57,6 +66,15 @@ export default function App(): ReactElement {
   const changeLanguage = async (language: Language) => {
     await i18n.changeLanguage(language);
     localStorage.setItem("weact-language", language);
+  };
+
+  const closeIntroduction = () => {
+    setIntroductionOpen(false);
+    try {
+      localStorage.setItem(INTRODUCTION_STORAGE_KEY, "1");
+    } catch {
+      // The introduction stays available through the header if storage is disabled.
+    }
   };
 
   const choosePdo = (candidate: SelectedPdo) => setSelectedPdo(candidate);
@@ -108,6 +126,7 @@ export default function App(): ReactElement {
     <header className="topbar">
       <div className="brand"><div className="brand-mark">ϟ</div><div><h1>{t("appName")}</h1><p>{t("appSubtitle")}</p></div></div>
       <div className="header-actions">
+        <button type="button" className="help-button" title={t("aboutApp")} aria-label={t("aboutApp")} onClick={() => setIntroductionOpen(true)}>?</button>
         <select aria-label="Language" value={i18n.language.startsWith("uk") ? "uk" : "en"} onChange={(event) => void changeLanguage(event.target.value as Language)}>
           {languages.map((language) => <option key={language} value={language}>{language === "uk" ? "Українська" : "English"}</option>)}
         </select>
@@ -185,8 +204,52 @@ export default function App(): ReactElement {
     {activeTab === "diagnostics" && <section className="panel tab-content diagnostics"><div className="panel-heading"><div><p className="eyebrow">BLE / UART</p><h2>{t("diagnostics")}</h2></div></div><div className="diagnostic-grid"><div><span>Requests</span><strong>{monitor.diagnostics.requests}</strong></div><div><span>Responses</span><strong>{monitor.diagnostics.responses}</strong></div><div><span>Timeouts / retries</span><strong>{monitor.diagnostics.timeouts} / {monitor.diagnostics.retries}</strong></div><div><span>Parser errors</span><strong>{monitor.diagnostics.parserErrors}</strong></div><div><span>BLE notifications</span><strong>{monitor.transportStats?.notifications ?? 0}</strong></div><div><span>RX / TX bytes</span><strong>{monitor.transportStats ? `${monitor.transportStats.rxBytes} / ${monitor.transportStats.txBytes}` : "—"}</strong></div></div></section>}
 
     {activeTab === "protocol" && <section className="panel tab-content raw-console"><div className="panel-heading"><div><p className="eyebrow">UART</p><h2>{t("rawConsole")}</h2></div></div><div className="console-heading"><span>{monitor.logs.length} entries</span><button type="button" className="quiet-button" onClick={monitor.clearLogs}>{t("clear")}</button></div><pre>{monitor.logs.length ? monitor.logs.map(describeProtocolLog).join("\n") : t("noData")}</pre></section>}
+
+    {introductionOpen && <IntroductionModal
+      language={i18n.language.startsWith("uk") ? "uk" : "en"}
+      onLanguageChange={changeLanguage}
+      onClose={closeIntroduction}
+    />}
   </main>;
 }
+
+const IntroductionModal = ({ language, onLanguageChange, onClose }: { language: Language; onLanguageChange: (language: Language) => Promise<void>; onClose: () => void }): ReactElement => {
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
+    <section className="intro-modal" role="dialog" aria-modal="true" aria-labelledby="introduction-title">
+      <header className="intro-modal-header">
+        <h2 id="introduction-title">{t("aboutTitle")}</h2>
+        <div className="modal-header-actions">
+          <div className="modal-language-switch" role="group" aria-label={t("language")}>
+            {languages.map((item) => <button key={item} type="button" className={language === item ? "active" : ""} aria-pressed={language === item} onClick={() => void onLanguageChange(item)}>{item.toUpperCase()}</button>)}
+          </div>
+          <button type="button" className="modal-close-button" aria-label={t("close")} onClick={onClose}>×</button>
+        </div>
+      </header>
+      <div className="intro-modal-body">
+        <img className="intro-device-image" src="/power-monitor-v1.png" alt={t("devicePhotoAlt")} />
+        <div className="intro-copy">
+          <p>{t("aboutIntro")}</p>
+          <p>{t("aboutMeasures")}</p>
+          <p>{t("aboutBridge")}</p>
+          <div className="intro-links">
+            <a className="primary-button" href="https://s.click.aliexpress.com/e/_c4EU8vAP" target="_blank" rel="noreferrer">{t("buyDevice")}</a>
+            <a className="quiet-button" href="https://github.com/dmytr0/weact_power_monitor/tree/master/3D%20Models" target="_blank" rel="noreferrer">{t("caseModels")}</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>;
+};
 
 const PdoRequestForm = ({ value, onChange }: { value: SelectedPdo; onChange: (value: SelectedPdo) => void }): ReactElement => {
   const currentLimitMa = maximumRequestCurrent(value);

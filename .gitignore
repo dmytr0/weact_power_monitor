@@ -3,6 +3,7 @@
 .DS_Store
 __pycache__/
 .idea/
+deploy-static.sh
 web/node_modules/
 # Keep the production PWA in Git: deploy-static only performs git checkout
 # and does not run the frontend build on the server.

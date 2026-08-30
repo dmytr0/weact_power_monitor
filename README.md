@@ -55,13 +55,14 @@ git@github.com:dmytr0/weact_power_monitor.git
 
 The existing `deploy-static weact_power_monitor master` script only fetches and
 checks out Git; it does not install Node.js dependencies or run a build. The
-production files are therefore committed under `web/dist` and the web-server
-document root must be configured as:
+production files are therefore committed both under `web/dist` and at the
+repository root. The existing Nginx document root works unchanged:
 
 ```text
-/srv/www/projects/weact_power_monitor/web/dist
+/srv/www/projects/weact_power_monitor
 ```
 
-For a new release, run `npm run build` from `web`, review the generated files,
-commit the updated `web/dist`, and push the branch. After that, run the existing
-deployment script unchanged.
+For a new release, run `npm run build` from `web`. The build mirrors `web/dist`
+to the repository root, so the checked-out tree is immediately deployable by
+the existing script. Commit the updated `web/dist` and root static files, push
+the branch, and then run the deployment script unchanged.

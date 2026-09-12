@@ -1,3 +1,6 @@
 # 3D enclosure models
 
-Place printable enclosure and mounting models for the WeAct Power Monitor setup in this folder.
+1 x Body.stl
+1 x lid.stl
+1 x pcb_fixture.stl
+2 x Button.stl

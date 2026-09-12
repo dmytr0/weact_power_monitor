@@ -45,6 +45,20 @@ const Metric = ({ label, value, unit, accent }: { label: string; value: string; 
   <span>{label}</span><strong>{value}<small>{unit}</small></strong>
 </article>;
 
+const socialLinks = [
+  { href: "https://github.com/dmytr0", label: "GitHub", icon: "code" },
+  { href: "https://t.me/dimonick", label: "Telegram", icon: "send" },
+  { href: "https://www.thingiverse.com/dimonick/designs", label: "Thingiverse", icon: "boxes" },
+  { href: "https://cults3d.com/en/users/dimonick/3d-models", label: "Cults3D", icon: "shapes" },
+] as const;
+
+const SocialIcon = ({ icon }: { icon: (typeof socialLinks)[number]["icon"] }): ReactElement => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  {icon === "code" && <><path d="m16 18 6-6-6-6" /><path d="m8 6-6 6 6 6" /><path d="m14.5 4-5 16" /></>}
+  {icon === "send" && <><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></>}
+  {icon === "boxes" && <><path d="m12 2 7 4v8l-7 4-7-4V6Z" /><path d="m12 22V10" /><path d="m5 6 7 4 7-4" /><path d="M5 18 2 16V8l3-2" /><path d="m19 18 3-2V8l-3-2" /></>}
+  {icon === "shapes" && <><circle cx="6.5" cy="6.5" r="3.5" /><path d="m17.5 3 4 7h-8Z" /><rect x="11" y="13" width="8" height="8" rx="1" /></>}
+</svg>;
+
 export default function App(): ReactElement {
   const monitor = usePowerMonitor();
   const { t, i18n } = useTranslation();
@@ -204,6 +218,13 @@ export default function App(): ReactElement {
     {activeTab === "diagnostics" && <section className="panel tab-content diagnostics"><div className="panel-heading"><div><p className="eyebrow">BLE / UART</p><h2>{t("diagnostics")}</h2></div></div><div className="diagnostic-grid"><div><span>Requests</span><strong>{monitor.diagnostics.requests}</strong></div><div><span>Responses</span><strong>{monitor.diagnostics.responses}</strong></div><div><span>Timeouts / retries</span><strong>{monitor.diagnostics.timeouts} / {monitor.diagnostics.retries}</strong></div><div><span>Parser errors</span><strong>{monitor.diagnostics.parserErrors}</strong></div><div><span>BLE notifications</span><strong>{monitor.transportStats?.notifications ?? 0}</strong></div><div><span>RX / TX bytes</span><strong>{monitor.transportStats ? `${monitor.transportStats.rxBytes} / ${monitor.transportStats.txBytes}` : "—"}</strong></div></div></section>}
 
     {activeTab === "protocol" && <section className="panel tab-content raw-console"><div className="panel-heading"><div><p className="eyebrow">UART</p><h2>{t("rawConsole")}</h2></div></div><div className="console-heading"><span>{monitor.logs.length} entries</span><button type="button" className="quiet-button" onClick={monitor.clearLogs}>{t("clear")}</button></div><pre>{monitor.logs.length ? monitor.logs.map(describeProtocolLog).join("\n") : t("noData")}</pre></section>}
+
+    <footer className="app-footer">
+      <span>© 2026 dimonick</span>
+      <nav aria-label="Посилання автора">
+        {socialLinks.map(({ href, label, icon }) => <a href={href} key={href} target="_blank" rel="noreferrer" aria-label={label} title={label}><SocialIcon icon={icon} /></a>)}
+      </nav>
+    </footer>
 
     {introductionOpen && <IntroductionModal
       language={i18n.language.startsWith("uk") ? "uk" : "en"}

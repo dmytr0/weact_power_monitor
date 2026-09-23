@@ -68,6 +68,7 @@ export default function App(): ReactElement {
   const [activeTab, setActiveTab] = useState<"monitor" | "system" | "diagnostics" | "protocol">("monitor");
   const [rshunt, setRshunt] = useState("");
   const [offsets, setOffsets] = useState<CurrentOffsets>();
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [introductionOpen, setIntroductionOpen] = useState(() => !introductionWasSeen());
   const importInput = useRef<HTMLInputElement>(null);
   const connected = monitor.status === "connected";
@@ -76,6 +77,28 @@ export default function App(): ReactElement {
     if (monitor.advanced.rshunt !== undefined) setRshunt(String(monitor.advanced.rshunt));
     if (monitor.advanced.offsets) setOffsets(monitor.advanced.offsets);
   }, [monitor.advanced]);
+
+  useEffect(() => {
+    let nextTheme: "light" | "dark" = "light";
+    try {
+      nextTheme = localStorage.getItem("black-olive-theme") === "dark" ? "dark" : "light";
+    } catch {
+      // Без локального сховища застосовуємо світлу тему за замовчуванням.
+    }
+    document.documentElement.dataset.theme = nextTheme;
+    setTheme(nextTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    document.documentElement.dataset.theme = nextTheme;
+    try {
+      localStorage.setItem("black-olive-theme", nextTheme);
+    } catch {
+      // Перемикач працює протягом поточного сеансу, якщо сховище недоступне.
+    }
+    setTheme(nextTheme);
+  };
 
   const changeLanguage = async (language: Language) => {
     await i18n.changeLanguage(language);
@@ -140,6 +163,7 @@ export default function App(): ReactElement {
     <header className="topbar">
       <div className="brand"><div className="brand-mark">ϟ</div><div><h1>{t("appName")}</h1><p>{t("appSubtitle")}</p></div></div>
       <div className="header-actions">
+        <button type="button" className="theme-button" onClick={toggleTheme} aria-label={theme === "dark" ? "Світла тема" : "Темна тема"} title={theme === "dark" ? "Світла тема" : "Темна тема"} aria-pressed={theme === "dark"}>{theme === "dark" ? "☀" : "☾"}</button>
         <button type="button" className="help-button" title={t("aboutApp")} aria-label={t("aboutApp")} onClick={() => setIntroductionOpen(true)}>?</button>
         <select aria-label="Language" value={i18n.language.startsWith("uk") ? "uk" : "en"} onChange={(event) => void changeLanguage(event.target.value as Language)}>
           {languages.map((language) => <option key={language} value={language}>{language === "uk" ? "Українська" : "English"}</option>)}
@@ -178,7 +202,7 @@ export default function App(): ReactElement {
           <Metric label={t("capacity")} value={decimal(monitor.energy?.mah, 0)} unit="mAh" accent="blue" />
           <Metric label={t("energy")} value={decimal(monitor.energy?.mwh, 0)} unit="mWh" accent="blue" />
         </aside>
-        <MeasurementChart samples={monitor.samples} rollingSeconds={monitor.chartWindowSeconds} />
+        <MeasurementChart samples={monitor.samples} rollingSeconds={monitor.chartWindowSeconds} theme={theme} />
       </section>
 
       <section className="two-column">
